@@ -31,17 +31,26 @@ def gpe3d_python(kappa, Nt, dt, X, Y, Z, U,  psi0, Ntstore=10, imag_time=0):
     Kin = np.exp(-prefactor * K_squared * dt / 2.0)
     psi = psi0
 
+    i = 0
     for t1 in range(Ntstore-1):
         for t2 in range(Ntskip):
+            print('step ' + str(i) + 'of ' + str(Nt))
+            i += 1
             # Split the entire time stepping into three steps.
             # The first is stepping by time k/2 but only applying the potential
             # and the mean field parts of the unitary
             psi_squared = psi * np.conj(psi)
             psi = np.exp(U1 + C1*psi_squared) * psi
+            print('first step')
+            psi_int = np.sum(np.conj(psi) * psi) * dV
+            print(psi_int)
             # The second part is applying the Kinetic part of the unitary. This
             # is done by taking the fourier transform of psi, so applying this
             # unitary in k space is simply multiplying it by another array
             psi = fft.ifftn(Kin*fft.fftn(psi))
+            print('second step')
+            psi_int = np.sum(np.conj(psi) * psi) * dV
+            print(psi_int)
             # The third part is again stepping by k/2 and applying the
             # potential and interaction part of the unitary
             psi_squared = psi * np.conj(psi)
@@ -49,8 +58,12 @@ def gpe3d_python(kappa, Nt, dt, X, Y, Z, U,  psi0, Ntstore=10, imag_time=0):
             if imag_time:
                 # If we are propagating in imaginary time, then the solution
                 # dies down, we need to explicitly normalize it
+                print('third step')
                 psi_int = np.sum(np.conj(psi) * psi) * dV
+                print(psi_int)
                 psi /= psi_int**0.5
+                psi_int = np.sum(np.conj(psi) * psi) * dV
+                print(psi_int)
 
         # Store the wavefuction in psi_out
         T[t1+1] = (t1+1) * dt * Ntskip
